@@ -113,7 +113,7 @@
 </head>
 <body>
 
-<!-- 🌟 系統載入畫面 🌟 -->
+<!-- 系統載入畫面 -->
 <div id="initLoader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
   <div class="loader" style="display: block; width: 50px; height: 50px; border-width: 6px;"></div>
   <p style="color: #666; margin-top: 20px; font-weight: bold;">系統連線中，請稍候...</p>
@@ -374,45 +374,39 @@
   const financeItemsPerPage = 5;
   let currentFinanceItems = []; 
 
-  // 🌟 API 連線基礎設定 🌟
+  // 🌟 API 連線基礎設定 (全面改為 POST 以解決 CORS) 🌟
   let API_URL = '';
   const urlParams = new URLSearchParams(window.location.search);
   const urlOrderId = urlParams.get('orderId');
 
-  // 🌟 共用的 Fetch API 呼叫函式 🌟
-  async function apiRequest(action, data = null) {
-    const isGet = !data;
-    const url = API_URL + '?action=' + action;
+  // 統一使用 POST 請求
+  async function apiRequest(action, data = {}) {
     const options = {
-      method: isGet ? 'GET' : 'POST'
+      method: 'POST',
+      body: JSON.stringify({ action: action, ...data }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow'
     };
 
-    if (!isGet) {
-      options.body = JSON.stringify({ action: action, ...data });
-      // 使用 text/plain 避免跨網域預檢請求 (CORS preflight) 被 GAS 阻擋
-      options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
-    }
-
     try {
-      const response = await fetch(url, options);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch(API_URL, options);
+      if (!response.ok) throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
       return await response.json();
     } catch (err) {
-      throw new Error('API 請求失敗：' + err.message);
+      throw new Error(err.message);
     }
   }
 
-  // 🌟 網頁載入時初始化 🌟
+  // 初始化
   window.onload = async function() { 
     try {
-      // 讀取同目錄下的 config.json
       const configRes = await fetch('config.json');
-      if (!configRes.ok) throw new Error('無法讀取設定檔');
+      if (!configRes.ok) throw new Error('無法讀取 config.json 設定檔');
       
       const config = await configRes.json();
       API_URL = config.apiUrl;
 
-      if (!API_URL) throw new Error('API 網址未設定');
+      if (!API_URL) throw new Error('config.json 中的 API 網址未設定');
 
       if (urlOrderId) {
         document.getElementById('paymentFrontEnd').style.display = 'block';
@@ -422,11 +416,10 @@
         loadFrontEndData(); 
       }
     } catch (err) {
-      document.getElementById('initLoader').innerHTML = '<p style="color:red; font-weight:bold;">系統初始化失敗：' + err.message + '</p>';
+      document.getElementById('initLoader').innerHTML = `<p style="color:red; font-weight:bold; padding: 20px; text-align: center;">系統初始化失敗：<br>${err.message}</p>`;
     }
   };
 
-  // ================= 顧客回報匯款邏輯 =================
   async function submitPaymentInfo() {
     const accLast5 = document.getElementById('payAccount').value.trim();
     const payAmount = document.getElementById('payAmount').value.trim();
@@ -445,11 +438,10 @@
         btn.disabled = true; btn.innerText = '已回報完畢';
       } else showMsg('發生錯誤', res.message);
     } catch(err) {
-      loader.style.display = 'none'; btn.innerText = '確認送出匯款資訊'; btn.disabled = false; showMsg('連線失敗', err.message);
+      loader.style.display = 'none'; btn.innerText = '確認送出匯款資訊'; btn.disabled = false; showMsg('連線失敗', 'API 請求失敗：' + err.message);
     }
   }
 
-  // ================= 前台點餐邏輯 =================
   async function loadFrontEndData() {
     try {
       const data = await apiRequest('getInitData');
@@ -457,7 +449,7 @@
       document.getElementById('initLoader').style.display = 'none';
       document.getElementById('mainFrontEnd').style.display = 'block';
     } catch(err) {
-      document.getElementById('initLoader').innerHTML = '<p style="color:red; font-weight:bold;">載入資料失敗：' + err.message + '</p>';
+      document.getElementById('initLoader').innerHTML = `<p style="color:red; font-weight:bold; padding: 20px; text-align: center;">載入資料失敗：<br>API 請求失敗：${err.message}</p>`;
     }
   }
 
@@ -536,7 +528,7 @@
       if (res.success) { showMsg('訂購成功', res.message, true); document.getElementById('orderForm').reset(); orderCart = []; renderCart(); } 
       else showMsg('發生錯誤', res.message);
     } catch(err) {
-      loader.style.display = 'none'; btn.innerText = '送出訂單'; btn.disabled = false; showMsg('連線失敗', err.message);
+      loader.style.display = 'none'; btn.innerText = '送出訂單'; btn.disabled = false; showMsg('連線失敗', 'API 請求失敗：' + err.message);
     }
   }
 
@@ -548,7 +540,6 @@
     const modal = document.getElementById(modalId); modal.classList.remove('active'); setTimeout(() => { modal.style.display = 'none'; }, 300);
   }
 
-  // ================= 後台管理與頁籤 =================
   function openLoginModal() {
     document.getElementById('adminPassword').value = ''; const modal = document.getElementById('loginModal');
     modal.style.display = 'flex'; setTimeout(() => { modal.classList.add('active'); }, 10);
@@ -564,7 +555,7 @@
       btn.innerText = '登入'; btn.disabled = false;
       if (isValid) { closeModal('loginModal'); enterAdminMode(); } else showMsg('登入失敗', '密碼錯誤，請重新輸入。');
     } catch(err) {
-      btn.innerText = '登入'; btn.disabled = false; showMsg('連線失敗', err.message);
+      btn.innerText = '登入'; btn.disabled = false; showMsg('連線失敗', 'API 請求失敗：' + err.message);
     }
   }
 
@@ -607,7 +598,7 @@
         renderFinanceTab();
       }
     } catch(err) {
-      showMsg('載入失敗', err.message);
+      showMsg('載入失敗', 'API 請求失敗：' + err.message);
     }
   }
 
@@ -647,11 +638,9 @@
       btn.innerText = '💾 儲存變更'; btn.disabled = false; 
       if (res.success) showMsg('成功', res.message, true); else showMsg('錯誤', res.message);
     } catch(err) {
-      btn.innerText = '💾 儲存變更'; btn.disabled = false; showMsg('連線失敗', err.message);
+      btn.innerText = '💾 儲存變更'; btn.disabled = false; showMsg('連線失敗', 'API 請求失敗：' + err.message);
     }
   }
-
-  // ================= 🌟 訂單追蹤與分頁邏輯 =================
 
   function parseOrderDetails(detailsStr) {
     const items = []; const lines = detailsStr.split('\n');
@@ -832,7 +821,6 @@
     const lblStat = document.getElementById(`statLbl-${rowIndex}-${itemName}`); if (lblStat) { if (isChecked) lblStat.classList.add('checked'); else lblStat.classList.remove('checked'); }
     renderOrderTable(currentOrderTab);
     
-    // 背景同步更新至伺服器
     apiRequest('updateOrderProgress', { rowIndex: rowIndex, progressJSONStr: JSON.stringify(order.progress) }).catch(err => console.error(err));
   }
 
@@ -849,11 +837,10 @@
       } 
       else { selectElement.disabled = false; selectElement.style.color = originalColor; showMsg('更新失敗', res.message); }
     } catch(err) {
-      selectElement.disabled = false; selectElement.style.color = originalColor; showMsg('連線失敗', err.message);
+      selectElement.disabled = false; selectElement.style.color = originalColor; showMsg('連線失敗', 'API 請求失敗：' + err.message);
     }
   }
 
-  // ================= 🌟 訂單結算邏輯 =================
   function renderFinanceTab() {
     let totalRev = 0; let monthRev = 0; let monthCount = 0;
     const now = new Date(); const currentMonth = now.getMonth(); const currentYear = now.getFullYear();
