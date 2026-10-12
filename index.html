@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>ZOCA 甜點訂購系統</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient-start: #fee2e2;
+      --bg-gradient-end: #fef9c3;
+      --primary: #d9777f;
+      --primary-hover: #c4646b;
+      --text-main: #4a4a4a;
+      --white: #ffffff;
+      --border-radius: 12px;
+      --shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px 10px; font-family: 'Noto Sans TC', sans-serif; background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end)); color: var(--text-main); min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; background: var(--white); border-radius: var(--border-radius); box-shadow: var(--shadow); padding: 30px; position: relative; }
+    .gear-icon { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; transition: transform 0.3s; color: #999; }
+    .gear-icon:hover { transform: rotate(90deg); color: var(--primary); }
+    .header-section { display: flex; align-items: flex-end; justify-content: center; gap: 15px; margin-bottom: 30px; border-bottom: 2px solid var(--bg-gradient-start); padding-bottom: 20px; }
+    .brand-logo { max-width: 180px; height: auto; display: block; }
+    h1 { color: var(--primary); font-weight: 700; margin: 0; margin-bottom: 5px; font-size: 1.8rem; line-height: 1; white-space: nowrap; }
+    .announcement-box { background: #fef9c3; border: 1px dashed #fde047; color: #b45309; padding: 12px 15px; border-radius: 8px; margin-bottom: 25px; font-weight: 500; line-height: 1.5; font-size: 0.95rem; display: none; }
+    h2 { font-size: 1.2rem; color: var(--primary); margin-top: 30px; border-left: 4px solid var(--primary); padding-left: 10px; }
+    
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 1rem; transition: border-color 0.3s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+    
+    .menu-selector { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
+    .menu-selector .item-select { flex: 2; min-width: 200px; }
+    .menu-selector .qty-select { flex: 1; min-width: 100px; }
+    .add-btn { padding: 12px 20px; background: #fef9c3; color: #d9777f; font-weight: 700; border: 1px solid #fde047; border-radius: 8px; cursor: pointer; transition: 0.3s; height: 47px; }
+    .add-btn:hover { background: #fde047; }
+    
+    .cart-list { border: 1px solid #eee; border-radius: 8px; padding: 15px; background: #fafafa; min-height: 80px; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #ddd; }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item-info { flex: 1; }
+    .remove-btn { background: #ff4d4f; color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.9rem; }
+    .remove-btn:hover { background: #d9363e; }
+    .empty-msg { text-align: center; color: #999; padding: 20px 0; }
+    
+    .total-section { text-align: right; font-size: 1.5rem; font-weight: 700; color: var(--primary); margin: 30px 0; padding-top: 20px; border-top: 1px solid #eee; }
+    
+    .submit-btn, .admin-save-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: var(--border-radius); font-size: 1.2rem; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 10px rgba(217, 119, 127, 0.3); transition: all 0.3s; }
+    .submit-btn:hover, .admin-save-btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+    .submit-btn:disabled, .admin-save-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 9999; opacity: 0; transition: opacity 0.3s ease; }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-content { background: white; border-radius: var(--border-radius); padding: 30px; width: 90%; max-width: 450px; box-shadow: var(--shadow); transform: translateY(-30px); transition: transform 0.3s ease; text-align: center; max-height: 80vh; overflow-y: auto;}
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+    .modal-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 15px; }
+    .modal-message { margin-bottom: 25px; line-height: 1.5; color: #555; }
+    .modal-btn { padding: 10px 25px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+    .modal-btn:hover { background: var(--primary-hover); }
+
+    .admin-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 12px; background: none; border: none; font-size: 1.1rem; font-weight: 700; color: #999; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
+    .tab-btn:hover { color: var(--primary); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .sub-tabs { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;}
+    .sub-tab-btn { padding: 8px 18px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; color: #666; transition: 0.3s; font-size: 0.95rem; font-weight: 500;}
+    .sub-tab-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .sub-tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 6px rgba(217,119,127,0.2); }
+    
+    .admin-table { width: 100%; border-collapse: collapse; margin-top: 10px; text-align: left; font-size: 0.95rem;}
+    .admin-table th, .admin-table td { padding: 15px 10px; border: 1px solid #ddd; vertical-align: middle; }
+    .admin-table th { background: #f3f4f6; white-space: nowrap; }
+    .admin-input { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; box-sizing: border-box; }
+    .admin-input:focus { outline: 1px solid var(--primary); }
+    .action-row { display: flex; gap: 10px; margin-top: 20px; }
+    
+    .view-details-btn { padding: 8px 12px; background: #fef9c3; color: #d9777f; font-weight: 700; border: 1px solid #fde047; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; white-space: nowrap;}
+    .view-details-btn:hover { background: #fde047; color: #c4646b;}
+    .stats-btn { padding: 8px 15px; background: #e0f2fe; color: #0369a1; font-weight: 700; border: 1px solid #bae6fd; border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 0.95rem;}
+    .stats-btn:hover { background: #bae6fd; }
+    
+    .page-btn { padding: 6px 12px; background: #fff; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; color: #666;}
+    .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+    .page-btn:disabled { background: #f3f4f6; color: #ccc; cursor: not-allowed; }
+
+    .checklist-label { display: block; padding: 8px; margin-bottom: 5px; background: #fff; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+    .checklist-label:hover { background: #f9f9f9; }
+    .checklist-label input { transform: scale(1.2); margin-right: 10px; cursor: pointer; }
+    .checklist-label.checked { background: #f0fdf4; border-color: #86efac; color: #166534; text-decoration: line-through; }
+    
+    .badge-ready { display: inline-block; padding: 2px 6px; background: #22c55e; color: white; border-radius: 4px; font-size: 0.75rem; margin-left: 5px; vertical-align: middle; animation: pulse 1.5s infinite;}
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+    .acc-header { background: #f3f4f6; padding: 12px 15px; cursor: pointer; font-weight: bold; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+    .acc-header:hover { background: #e5e7eb; }
+    .acc-body { display: none; padding: 10px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; margin-bottom: 15px; }
+
+    .finance-cards { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;}
+    .finance-card { flex: 1; min-width: 180px; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .finance-card h3 { margin: 0 0 10px 0; color: #666; font-size: 1rem; }
+    .finance-card .amount { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+    .finance-filter { background: #fafafa; border: 1px solid #eee; border-radius: 12px; padding: 20px; }
+    .finance-filter h3 { margin: 0 0 15px 0; color: #333; font-size: 1.1rem; }
+
+    .loader { display: none; margin: 10px auto; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- 🌟 系統載入畫面 🌟 -->
+<div id="initLoader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+  <div class="loader" style="display: block; width: 50px; height: 50px; border-width: 6px;"></div>
+  <p style="color: #666; margin-top: 20px; font-weight: bold;">系統連線中，請稍候...</p>
+</div>
+
+<!-- ================= 前台點餐容器 ================= -->
+<div class="container" id="mainFrontEnd" style="display: none;">
+  <div class="gear-icon" onclick="openLoginModal()" title="管理員登入">⚙️</div>
+  <div class="header-section">
+    <img src="https://drive.google.com/thumbnail?id=12WIEhzUH49_cyxMtdjmnf5EZ5bJc8n-D&sz=w800" alt="ZOCA Logo" class="brand-logo">
+    <h1>甜點線上訂購</h1>
+  </div>
+  <div class="announcement-box" id="announcementBox">📢 <span id="announcementText"></span></div>
+  
+  <form id="orderForm">
+    <h2>填寫訂購人資料</h2>
+    <div class="form-group"><label>姓名</label><input type="text" id="name" required></div>
+    <div class="form-group"><label>聯絡電話</label><input type="tel" id="phone" required></div>
+    <div class="form-group"><label>電子郵件</label><input type="email" id="email" required></div>
+    
+    <h2>選擇甜點</h2>
+    <div class="menu-selector">
+      <div class="form-group item-select" style="margin-bottom: 0;">
+        <label>選擇品項</label>
+        <select id="itemSelect"><option value="" disabled selected>-- 正在為您載入資料... --</option></select>
+      </div>
+      <div class="form-group qty-select" style="margin-bottom: 0;">
+        <label>數量</label>
+        <select id="itemQty">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+      <button type="button" class="add-btn" id="addBtn" onclick="addToCart()" disabled>加入明細</button>
+    </div>
+
+    <div class="cart-list" id="cartContainer"><div class="empty-msg">尚未選擇任何甜點</div></div>
+    
+    <div class="form-group" style="margin-top: 20px;">
+      <label for="remarks">備註說明 (選填)</label>
+      <textarea id="remarks" rows="2" placeholder="如有自取時間、包裝需求或其他問題，請在此填寫..." style="resize: vertical;"></textarea>
+    </div>
+
+    <div class="total-section">總金額：NT$ <span id="totalPrice">0</span></div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+      <div class="loader" id="loader" style="margin-bottom: 10px;"></div>
+      <button type="button" class="submit-btn" id="submitBtn" style="width: auto; padding: 15px 60px;" onclick="submitOrder()">送出訂單</button>
+    </div>
+  </form>
+</div>
+
+<!-- ================= 專屬匯款回報容器 ================= -->
+<div class="container" id="paymentFrontEnd" style="display: none; max-width: 500px;">
+  <div class="header-section" style="justify-content: center; margin-bottom: 10px;">
+    <h1 style="color: #0369a1;">💰 回報匯款資訊</h1>
+  </div>
+  <div style="background: #f0fdf4; border: 1px dashed #86efac; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center;">
+    <p style="margin: 0; color: #166534; font-size: 0.95rem;">訂單編號</p>
+    <strong id="displayOrderId" style="font-size: 1.2rem; color: #15803d; word-break: break-all;"></strong>
+  </div>
+  
+  <form id="paymentForm">
+    <div class="form-group">
+      <label for="payAccount">匯款帳號 (後五碼)</label>
+      <input type="text" id="payAccount" placeholder="例如：12345" maxlength="5" required style="text-align: center; font-size: 1.2rem; letter-spacing: 2px;">
+    </div>
+    <div class="form-group">
+      <label for="payAmount">實際匯款金額</label>
+      <input type="number" id="payAmount" placeholder="請輸入匯款總金額" required style="text-align: center; font-size: 1.2rem;">
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+      <div class="loader" id="payLoader" style="margin-bottom: 10px;"></div>
+      <button type="button" class="submit-btn" id="submitPayBtn" style="width: auto; padding: 15px 40px; background: #0369a1;" onclick="submitPaymentInfo()">確認送出匯款資訊</button>
+    </div>
+  </form>
+</div>
+
+<!-- ================= 後台管理容器 ================= -->
+<div class="container" id="adminPanel" style="display: none; max-width: 950px;">
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h2 style="margin: 0; border: none; padding: 0;">⚙️ ZOCA 後台管理中心</h2>
+    <button class="remove-btn" style="background:#999; padding: 8px 15px;" onclick="exitAdmin()">登出返回前台</button>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="tab-btn" id="btnTabMenu" onclick="switchAdminTab('tabMenu')">🍰 商品與設定管理</button>
+    <button class="tab-btn active" id="btnTabOrder" onclick="switchAdminTab('tabOrder')">📦 訂單追蹤管理</button>
+    <button class="tab-btn" id="btnTabFinance" onclick="switchAdminTab('tabFinance')">💰 訂單結算</button>
+  </div>
+
+  <!-- 分頁 1: 菜單與設定 -->
+  <div id="tabMenu" class="tab-content">
+    <div class="form-group">
+      <label style="color: #666; font-size: 0.9rem;">前台表單狀態</label>
+      <select id="adminFormStatus" class="admin-input" style="font-weight: bold;">
+        <option value="開啟">🟢 開啟 (開放顧客下單)</option>
+        <option value="關閉">🔴 關閉 (暫停接單，隱藏表單僅顯示公告)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="color: #666; font-size: 0.9rem;">前台公告內容 (若留空則前台自動隱藏)</label>
+      <input type="text" id="adminAnnouncement" class="admin-input" placeholder="請輸入要顯示在首頁的公告..." style="padding: 10px;">
+    </div>
+    <div class="form-group">
+      <label style="color: #666; font-size: 0.9rem;">匯款說明 (顯示於訂單確認信中，按鈕上方)</label>
+      <textarea id="adminRemitInfo" class="admin-input" rows="3" placeholder="請輸入匯款帳號與相關說明文字..." style="padding: 10px; resize: vertical;"></textarea>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="admin-table">
+        <thead><tr><th style="width: 20%;">分類</th><th style="width: 35%;">品名</th><th style="width: 15%;">價格</th><th style="width: 15%;">狀態</th><th style="width: 15%;">操作</th></tr></thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+    <div class="action-row" style="justify-content: center; gap: 20px;">
+      <button type="button" class="add-btn" style="width: auto; padding: 12px 30px; height: auto;" onclick="addAdminRow()">+ 新增一列</button>
+      <button type="button" class="admin-save-btn" id="saveMenuBtn" style="width: auto; padding: 12px 40px; margin: 0; height: auto;" onclick="saveAdminData()">💾 儲存變更</button>
+    </div>
+  </div>
+
+  <!-- 分頁 2: 訂單管理 -->
+  <div id="tabOrder" class="tab-content active">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+      <div class="sub-tabs" style="margin-bottom: 0;">
+        <button class="sub-tab-btn active" id="subTab-處理中" onclick="switchOrderSubTab('處理中')">處理中</button>
+        <button class="sub-tab-btn" id="subTab-已出貨" onclick="switchOrderSubTab('已出貨')">已出貨</button>
+        <button class="sub-tab-btn" id="subTab-已結案" onclick="switchOrderSubTab('已結案')">已結案</button>
+      </div>
+      <button class="stats-btn" onclick="showProcessingStats()">📊 處理中品項備料清單</button>
+    </div>
+    
+    <div id="orderStatusDesc" style="color: #666; font-size: 0.85rem; margin-bottom: 15px; padding-left: 5px;">
+      處理中：代表還未製作。若顧客已回報匯款，資訊將顯示於此。管理員請優先查看此區訂單。
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="admin-table">
+        <thead style="background: #f3f4f6;">
+          <tr>
+            <th style="width: 170px;">日期時間</th>
+            <th>顧客資訊</th>
+            <th style="width: 120px; text-align: center;">訂購明細</th>
+            <th style="width: 80px;">總額</th>
+            <th style="width: 110px;">訂單狀態</th>
+          </tr>
+        </thead>
+        <tbody id="orderTableBody"></tbody>
+      </table>
+    </div>
+    
+    <div id="paginationContainer" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px;"></div>
+  </div>
+
+  <!-- 分頁 3: 訂單結算 -->
+  <div id="tabFinance" class="tab-content">
+    <div class="finance-cards">
+      <div class="finance-card">
+        <h3>歷史總訂單金額</h3>
+        <div class="amount" id="totalRevenue">NT$ 0</div>
+      </div>
+      <div class="finance-card">
+        <h3>本月訂單金額</h3>
+        <div class="amount" id="monthlyRevenue">NT$ 0</div>
+      </div>
+      <div class="finance-card">
+        <h3>本月訂單筆數</h3>
+        <div class="amount" id="monthlyOrderCount" style="color: #0369a1;">0 筆</div>
+      </div>
+    </div>
+    
+    <div class="finance-filter">
+      <h3>區間統計與品項出貨數</h3>
+      <p style="font-size: 0.85rem; color: #666; margin-top: 0;">設定區間後，系統會自動統計該時段內的總金額、筆數與各品項總量。</p>
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <input type="date" id="startDate" class="admin-input" style="max-width: 180px;">
+        <span style="color: #666; font-weight: bold;">至</span>
+        <input type="date" id="endDate" class="admin-input" style="max-width: 180px;">
+        <button class="stats-btn" onclick="calcCustomRevenue()">🔍 結算查詢</button>
+      </div>
+      <div style="margin-top: 25px; font-size: 1.3rem; font-weight: bold; color: #333;">
+        區間總額結算：<span id="customRevenue" style="color: var(--primary); font-size: 1.8rem; margin-left: 10px;">NT$ 0</span>
+        <span id="customOrderCount" style="font-size: 1rem; color: #666; margin-left: 15px;">共 0 筆</span>
+      </div>
+      
+      <div style="margin-top: 20px; overflow-x: auto;">
+        <table class="admin-table">
+          <thead style="background: #f3f4f6;">
+            <tr><th>品項名稱</th><th style="width: 150px; text-align: center;">出貨數量</th></tr>
+          </thead>
+          <tbody id="financeItemStatsBody"></tbody>
+        </table>
+      </div>
+
+      <div id="financePaginationContainer" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px;"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= 模態視窗 ================= -->
+<div id="customModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-title" id="modalTitle">提示</div>
+    <div class="modal-message" id="modalMessage">訊息內容</div>
+    <button class="modal-btn" onclick="closeModal('customModal')">確定</button>
+  </div>
+</div>
+
+<div id="orderDetailsModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-title" style="color: var(--primary);">📦 訂單檢貨清單</div>
+    <div class="modal-message" id="detailsModalBody" style="text-align: left;"></div>
+    <button class="modal-btn" onclick="closeModal('orderDetailsModal')">完成</button>
+  </div>
+</div>
+
+<div id="statsModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 500px; padding: 20px;">
+    <div class="modal-title" style="color: #0369a1; border-bottom: 2px solid #e0f2fe; padding-bottom: 10px;">👨‍🍳 集中備料核對表</div>
+    <p style="font-size: 0.85rem; color: #666; text-align: left; margin-top: 0;">點擊品項展開訂單列表。在此處打勾，會同步更新外場的檢貨進度！</p>
+    <div class="modal-message" id="statsModalBody" style="text-align: left; margin-bottom: 20px; max-height: 60vh; overflow-y: auto;"></div>
+    <button class="modal-btn" style="background: #0369a1; width: 100%;" onclick="closeModal('statsModal')">確認關閉</button>
+  </div>
+</div>
+
+<div id="loginModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-title" style="color: var(--primary);">管理員登入</div>
+    <div class="modal-message"><input type="password" id="adminPassword" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem;" placeholder="請輸入管理員密碼"></div>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button class="modal-btn" style="background: #ccc; color: #333;" onclick="closeModal('loginModal')">取消</button>
+      <button class="modal-btn" id="loginBtn" onclick="verifyAdmin()">登入</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmDeleteModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-title" style="color: #ff4d4f;">⚠️ 確認刪除</div>
+    <div class="modal-message">確定要刪除這個品項嗎？<br><small style="color:#888;">(提示：刪除後需點擊「儲存變更」才會生效)</small></div>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button class="modal-btn" style="background: #ccc; color: #333;" onclick="closeModal('confirmDeleteModal')">取消</button>
+      <button class="modal-btn" style="background: #ff4d4f;" onclick="executeDeleteRow()">確定刪除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let orderCart = [];
+  let allAdminOrders = [];      
+  let currentOrderTab = '處理中'; 
+  let currentOrderPage = 1;
+  const ordersPerPage = 5;
+  let currentFinancePage = 1;
+  const financeItemsPerPage = 5;
+  let currentFinanceItems = []; 
+
+  // 🌟 API 連線基礎設定 🌟
+  let API_URL = '';
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlOrderId = urlParams.get('orderId');
+
+  // 🌟 共用的 Fetch API 呼叫函式 🌟
+  async function apiRequest(action, data = null) {
+    const isGet = !data;
+    const url = API_URL + '?action=' + action;
+    const options = {
+      method: isGet ? 'GET' : 'POST'
+    };
+
+    if (!isGet) {
+      options.body = JSON.stringify({ action: action, ...data });
+      // 使用 text/plain 避免跨網域預檢請求 (CORS preflight) 被 GAS 阻擋
+      options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+    }
+
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (err) {
+      throw new Error('API 請求失敗：' + err.message);
+    }
+  }
+
+  // 🌟 網頁載入時初始化 🌟
+  window.onload = async function() { 
+    try {
+      // 讀取同目錄下的 config.json
+      const configRes = await fetch('config.json');
+      if (!configRes.ok) throw new Error('無法讀取設定檔');
+      
+      const config = await configRes.json();
+      API_URL = config.apiUrl;
+
+      if (!API_URL) throw new Error('API 網址未設定');
+
+      if (urlOrderId) {
+        document.getElementById('paymentFrontEnd').style.display = 'block';
+        document.getElementById('displayOrderId').innerText = urlOrderId;
+        document.getElementById('initLoader').style.display = 'none';
+      } else {
+        loadFrontEndData(); 
+      }
+    } catch (err) {
+      document.getElementById('initLoader').innerHTML = '<p style="color:red; font-weight:bold;">系統初始化失敗：' + err.message + '</p>';
+    }
+  };
+
+  // ================= 顧客回報匯款邏輯 =================
+  async function submitPaymentInfo() {
+    const accLast5 = document.getElementById('payAccount').value.trim();
+    const payAmount = document.getElementById('payAmount').value.trim();
+
+    if (!accLast5 || !payAmount) return showMsg('欄位未填寫', '請填寫完整的後五碼與匯款金額。');
+    if (accLast5.length !== 5) return showMsg('格式錯誤', '匯款帳號後五碼必須為 5 位數字。');
+
+    const btn = document.getElementById('submitPayBtn'), loader = document.getElementById('payLoader');
+    btn.disabled = true; btn.innerText = '資料傳送中...'; loader.style.display = 'block';
+
+    try {
+      const res = await apiRequest('submitPaymentInfo', { data: { orderId: urlOrderId, accountLast5: accLast5, paymentAmount: payAmount } });
+      loader.style.display = 'none'; btn.innerText = '確認送出匯款資訊'; btn.disabled = false;
+      if (res.success) {
+        showMsg('回報成功', res.message, true); document.getElementById('paymentForm').reset();
+        btn.disabled = true; btn.innerText = '已回報完畢';
+      } else showMsg('發生錯誤', res.message);
+    } catch(err) {
+      loader.style.display = 'none'; btn.innerText = '確認送出匯款資訊'; btn.disabled = false; showMsg('連線失敗', err.message);
+    }
+  }
+
+  // ================= 前台點餐邏輯 =================
+  async function loadFrontEndData() {
+    try {
+      const data = await apiRequest('getInitData');
+      renderFrontEnd(data);
+      document.getElementById('initLoader').style.display = 'none';
+      document.getElementById('mainFrontEnd').style.display = 'block';
+    } catch(err) {
+      document.getElementById('initLoader').innerHTML = '<p style="color:red; font-weight:bold;">載入資料失敗：' + err.message + '</p>';
+    }
+  }
+
+  function renderFrontEnd(data) {
+    const annBox = document.getElementById('announcementBox');
+    const annText = document.getElementById('announcementText');
+    if (data.announcement && data.announcement.trim() !== '') {
+      annText.innerText = data.announcement; annBox.style.display = 'block';
+    } else annBox.style.display = 'none';
+
+    if (data.formStatus === '關閉') {
+      document.getElementById('orderForm').style.display = 'none';
+      return; 
+    } else {
+      document.getElementById('orderForm').style.display = 'block';
+    }
+
+    const activeMenu = data.menu.filter(item => item.status !== '下架' && item.name && item.price !== "");
+    const select = document.getElementById('itemSelect');
+    if (activeMenu.length === 0) { select.innerHTML = '<option value="" disabled selected>-- 尚無供應品項 --</option>'; return; }
+    
+    select.innerHTML = '<option value="" disabled selected>-- 請選擇甜點 --</option>';
+    const categories = {};
+    activeMenu.forEach(item => {
+      if (!categories[item.category]) categories[item.category] = [];
+      categories[item.category].push(item);
+    });
+    for (const category in categories) {
+      const optgroup = document.createElement('optgroup'); optgroup.label = `【${category}系列】`;
+      categories[category].forEach((item, index) => {
+        const option = document.createElement('option'); option.value = `${item.name}|${item.price}`; option.textContent = `${index + 1}. ${item.name} - NT$${item.price}`;
+        optgroup.appendChild(option);
+      });
+      select.appendChild(optgroup);
+    }
+    document.getElementById('addBtn').disabled = false;
+  }
+
+  function addToCart() {
+    const select = document.getElementById('itemSelect'), qty = parseInt(document.getElementById('itemQty').value);
+    if (!select.value) return showMsg('尚未選擇', '請從下拉選單中選擇一款甜點！');
+    const [name, priceStr] = select.value.split('|'); const price = parseInt(priceStr);
+    const existingIndex = orderCart.findIndex(item => item.name === name);
+    if (existingIndex !== -1) orderCart[existingIndex].qty += qty; else orderCart.push({ name, price, qty });
+    select.selectedIndex = 0; document.getElementById('itemQty').value = "1"; renderCart();
+  }
+
+  function removeItem(index) { orderCart.splice(index, 1); renderCart(); }
+
+  function renderCart() {
+    const container = document.getElementById('cartContainer'); let total = 0;
+    if (orderCart.length === 0) { container.innerHTML = '<div class="empty-msg">尚未選擇任何甜點</div>'; document.getElementById('totalPrice').innerText = 0; return; }
+    let html = '';
+    orderCart.forEach((item, index) => {
+      const subTotal = item.price * item.qty; total += subTotal;
+      html += `<div class="cart-item"><div class="cart-item-info"><strong>${item.name}</strong><br><span style="color: #888; font-size: 0.9rem;">單價 $${item.price} × ${item.qty} = NT$ ${subTotal}</span></div><button type="button" class="remove-btn" onclick="removeItem(${index})">刪除</button></div>`;
+    });
+    container.innerHTML = html; document.getElementById('totalPrice').innerText = total;
+  }
+
+  async function submitOrder() {
+    const name = document.getElementById('name').value.trim(), phone = document.getElementById('phone').value.trim(), email = document.getElementById('email').value.trim(), remarks = document.getElementById('remarks').value.trim();
+    if (!name || !phone || !email) return showMsg('欄位未填寫', '請填寫完整的姓名、電話與電子郵件。');
+    if (orderCart.length === 0) return showMsg('明細為空', '您的清單內還沒有任何甜點喔！');
+
+    let total = 0, details = '';
+    orderCart.forEach(item => { details += `${item.name} x ${item.qty} (小計: ${item.price * item.qty})\n`; total += item.price * item.qty; });
+    const orderData = { name, phone, email, details, total, remarks };
+    const btn = document.getElementById('submitBtn'), loader = document.getElementById('loader');
+    btn.disabled = true; btn.innerText = '訂單處理中...'; loader.style.display = 'block';
+
+    try {
+      const currentUrl = window.location.origin + window.location.pathname;
+      const res = await apiRequest('submitOrder', { data: orderData, frontendUrl: currentUrl });
+      loader.style.display = 'none'; btn.innerText = '送出訂單'; btn.disabled = false;
+      if (res.success) { showMsg('訂購成功', res.message, true); document.getElementById('orderForm').reset(); orderCart = []; renderCart(); } 
+      else showMsg('發生錯誤', res.message);
+    } catch(err) {
+      loader.style.display = 'none'; btn.innerText = '送出訂單'; btn.disabled = false; showMsg('連線失敗', err.message);
+    }
+  }
+
+  function showMsg(title, message, isSuccess = false) {
+    document.getElementById('modalTitle').innerText = title; document.getElementById('modalTitle').style.color = isSuccess ? '#4caf50' : '#d9777f'; document.getElementById('modalMessage').innerText = message;
+    const modal = document.getElementById('customModal'); modal.style.display = 'flex'; setTimeout(() => { modal.classList.add('active'); }, 10);
+  }
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId); modal.classList.remove('active'); setTimeout(() => { modal.style.display = 'none'; }, 300);
+  }
+
+  // ================= 後台管理與頁籤 =================
+  function openLoginModal() {
+    document.getElementById('adminPassword').value = ''; const modal = document.getElementById('loginModal');
+    modal.style.display = 'flex'; setTimeout(() => { modal.classList.add('active'); }, 10);
+  }
+
+  async function verifyAdmin() {
+    const pwd = document.getElementById('adminPassword').value;
+    if (!pwd) return;
+    const btn = document.getElementById('loginBtn'); btn.innerText = '驗證中...'; btn.disabled = true;
+
+    try {
+      const isValid = await apiRequest('verifyPassword', { password: pwd });
+      btn.innerText = '登入'; btn.disabled = false;
+      if (isValid) { closeModal('loginModal'); enterAdminMode(); } else showMsg('登入失敗', '密碼錯誤，請重新輸入。');
+    } catch(err) {
+      btn.innerText = '登入'; btn.disabled = false; showMsg('連線失敗', err.message);
+    }
+  }
+
+  function enterAdminMode() {
+    document.getElementById('mainFrontEnd').style.display = 'none';
+    document.getElementById('paymentFrontEnd').style.display = 'none'; 
+    document.getElementById('adminPanel').style.display = 'block';
+    switchAdminTab('tabOrder'); 
+  }
+
+  function exitAdmin() {
+    document.getElementById('adminPanel').style.display = 'none';
+    if (urlOrderId) document.getElementById('paymentFrontEnd').style.display = 'block';
+    else { 
+      document.getElementById('initLoader').style.display = 'flex';
+      loadFrontEndData(); 
+    }
+  }
+
+  async function switchAdminTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    document.getElementById('btn' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+
+    try {
+      if (tabId === 'tabMenu') {
+        document.getElementById('adminTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">載入資料中...</td></tr>';
+        const data = await apiRequest('getInitData');
+        renderAdminConfig(data);
+      } 
+      else if (tabId === 'tabOrder') {
+        document.getElementById('orderTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">讀取訂單中...</td></tr>';
+        allAdminOrders = await apiRequest('getAllOrders');
+        switchOrderSubTab(currentOrderTab);
+      }
+      else if (tabId === 'tabFinance') {
+        allAdminOrders = await apiRequest('getAllOrders');
+        renderFinanceTab();
+      }
+    } catch(err) {
+      showMsg('載入失敗', err.message);
+    }
+  }
+
+  function renderAdminConfig(data) {
+    document.getElementById('adminFormStatus').value = data.formStatus || '開啟';
+    document.getElementById('adminAnnouncement').value = data.announcement || '';
+    document.getElementById('adminRemitInfo').value = data.remitInfo || '';
+    
+    const tbody = document.getElementById('adminTableBody'); tbody.innerHTML = '';
+    if (data.menu && data.menu.length > 0) { data.menu.forEach(item => appendAdminRow(item.category, item.name, item.price, item.status)); } else addAdminRow(); 
+  }
+  function addAdminRow() { appendAdminRow('新分類', '', '', '上架'); }
+  function appendAdminRow(category, name, price, status) {
+    const tbody = document.getElementById('adminTableBody'); const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input type="text" class="admin-input cat-input" value="${category}"></td><td><input type="text" class="admin-input name-input" value="${name}" placeholder="輸入名稱"></td><td><input type="number" class="admin-input price-input" value="${price}" placeholder="0"></td><td><select class="admin-input status-input"><option value="上架" ${status==='上架'?'selected':''}>上架</option><option value="下架" ${status==='下架'?'selected':''}>下架</option></select></td><td style="text-align: center;"><button class="remove-btn" onclick="this.closest('tr').remove()">刪除</button></td>`;
+    tbody.appendChild(tr);
+  }
+  
+  async function saveAdminData() {
+    const rows = document.querySelectorAll('#adminTableBody tr'); let newMenu = [], valid = true;
+    rows.forEach(tr => {
+      const c = tr.querySelector('.cat-input').value.trim(), n = tr.querySelector('.name-input').value.trim(), p = tr.querySelector('.price-input').value.trim(), s = tr.querySelector('.status-input').value;
+      if (!c || !n || !p) valid = false; newMenu.push({ category: c, name: n, price: p, status: s });
+    });
+    if (!valid) return showMsg('資料不完整', '分類、品名與價格欄位不能為空！');
+    
+    const payload = { 
+      menu: newMenu, 
+      announcement: document.getElementById('adminAnnouncement').value.trim(),
+      remitInfo: document.getElementById('adminRemitInfo').value.trim(),
+      formStatus: document.getElementById('adminFormStatus').value
+    };
+    
+    const btn = document.getElementById('saveMenuBtn'); btn.innerText = '儲存中...'; btn.disabled = true;
+    try {
+      const res = await apiRequest('saveAdminData', { data: payload });
+      btn.innerText = '💾 儲存變更'; btn.disabled = false; 
+      if (res.success) showMsg('成功', res.message, true); else showMsg('錯誤', res.message);
+    } catch(err) {
+      btn.innerText = '💾 儲存變更'; btn.disabled = false; showMsg('連線失敗', err.message);
+    }
+  }
+
+  // ================= 🌟 訂單追蹤與分頁邏輯 =================
+
+  function parseOrderDetails(detailsStr) {
+    const items = []; const lines = detailsStr.split('\n');
+    lines.forEach(line => {
+      if (!line.trim()) return; const match = line.match(/(.+?)\s+x\s+(\d+)\s+\(小計:/);
+      if (match) items.push({ name: match[1].trim(), qty: parseInt(match[2], 10), rawLine: line.trim() });
+    });
+    return items;
+  }
+
+  function isOrderFullyPrepared(order) {
+    const items = parseOrderDetails(order.details); if(items.length === 0) return false;
+    for(let i=0; i<items.length; i++) { if (!order.progress[items[i].name]) return false; }
+    return true;
+  }
+
+  function switchOrderSubTab(statusFilter) {
+    currentOrderTab = statusFilter;
+    currentOrderPage = 1; 
+    
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('subTab-' + statusFilter).classList.add('active');
+    
+    const desc = document.getElementById('orderStatusDesc');
+    if(statusFilter === '處理中') desc.innerText = '處理中：代表還未製作。若顧客已回報匯款，資訊將顯示於此。管理員請優先查看此區訂單。';
+    else if(statusFilter === '已出貨') desc.innerText = '已出貨：代表已製作，但還未確認付款。';
+    else if(statusFilter === '已結案') desc.innerText = '已結案：代表已製作並確認付款。';
+
+    renderOrderTable(statusFilter);
+  }
+
+  function renderOrderTable(statusFilter) {
+    const tbody = document.getElementById('orderTableBody'); 
+    tbody.innerHTML = '';
+    const filteredOrders = allAdminOrders.filter(o => o.status === statusFilter);
+
+    if (filteredOrders.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:#999;">此分類目前尚無訂單</td></tr>`;
+      document.getElementById('paginationContainer').innerHTML = ''; 
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+    if (currentOrderPage > totalPages) currentOrderPage = totalPages || 1;
+    
+    const startIndex = (currentOrderPage - 1) * ordersPerPage;
+    const endIndex = startIndex + ordersPerPage;
+    const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+    paginatedOrders.forEach(order => {
+      let statusColor = '#333';
+      if (order.status === '處理中') statusColor = '#d9777f';
+      if (order.status === '已出貨') statusColor = '#eab308';
+      if (order.status === '已結案') statusColor = '#22c55e';
+
+      const isReady = (order.status === '處理中' && isOrderFullyPrepared(order));
+      const badgeHtml = isReady ? `<span class="badge-ready">✓ 備料完成</span>` : '';
+
+      let payInfoHtml = '';
+      if (order.accountLast5 || order.paymentAmount) {
+        payInfoHtml = `
+          <div style="padding: 6px 12px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.85rem; color: #0369a1; display: inline-block;">
+            <strong>💳 匯款資訊</strong><br>
+            後五碼: <span style="font-weight:bold; color:#0c4a6e;">${order.accountLast5}</span><br>
+            金額: <span style="font-weight:bold; color:#0c4a6e;">$${order.paymentAmount}</span>
+          </div>`;
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-size: 0.85rem; color:#555; white-space: nowrap;"><strong style="color:#000;">${order.date}</strong><br><span style="font-size:0.75rem; color:#666;">編號: ${order.orderId}</span></td>
+        
+        <td style="font-size: 0.9rem;">
+          <div style="display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap;">
+            <div>
+              <strong>${order.name}</strong> ${badgeHtml}<br>
+              📞 ${order.phone}<br>
+              ✉️ <a href="mailto:${order.email}" style="color:#666; text-decoration:none;">${order.email}</a>
+            </div>
+            ${payInfoHtml}
+          </div>
+        </td>
+        
+        <td style="text-align: center;"><button class="view-details-btn" onclick="showOrderDetails(${order.rowIndex})">🔍 查看檢貨單</button></td>
+        <td style="font-weight:bold; color:var(--primary);">$${order.total}</td>
+        <td>
+          <select class="admin-input" style="font-weight:bold; color:${statusColor};" onchange="changeOrderStatus(${order.rowIndex}, this)">
+            <option value="處理中" ${order.status==='處理中'?'selected':''}>處理中</option>
+            <option value="已出貨" ${order.status==='已出貨'?'selected':''}>已出貨</option>
+            <option value="已結案" ${order.status==='已結案'?'selected':''}>已結案</option>
+          </select>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages) {
+    const container = document.getElementById('paginationContainer');
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+    
+    const prevDisabled = currentOrderPage === 1 ? 'disabled' : '';
+    const nextDisabled = currentOrderPage === totalPages ? 'disabled' : '';
+
+    container.innerHTML = `
+      <button class="page-btn" ${prevDisabled} onclick="changeOrderPage(-1)">◀ 上一頁</button>
+      <span style="color: #666; font-weight: 500;">第 ${currentOrderPage} / ${totalPages} 頁</span>
+      <button class="page-btn" ${nextDisabled} onclick="changeOrderPage(1)">下一頁 ▶</button>
+    `;
+  }
+
+  function changeOrderPage(direction) {
+    currentOrderPage += direction;
+    renderOrderTable(currentOrderTab);
+  }
+
+  function showOrderDetails(rowIndex) {
+    const order = allAdminOrders.find(o => o.rowIndex === rowIndex); if (!order) return;
+    let html = `<div style="background:#f9f9f9; padding:15px; border-radius:8px; border:1px solid #eee;">`;
+    const items = parseOrderDetails(order.details);
+    if(items.length > 0) {
+      items.forEach(item => {
+        const isChecked = order.progress[item.name] ? 'checked' : '';
+        const labelClass = order.progress[item.name] ? 'checklist-label checked' : 'checklist-label';
+        html += `<label class="${labelClass}" id="lbl-${rowIndex}-${item.name}"><input type="checkbox" ${isChecked} onchange="toggleItemProgress(${rowIndex}, '${item.name}', this.checked)">${item.rawLine}</label>`;
+      });
+    } else { html += `<p style="margin:0; color:#999;">無明細資料</p>`; }
+    html += `</div>`;
+    if (order.remarks) { html += `<div style="margin-top: 15px; padding: 12px; background: #fff5f5; border-radius: 6px; color: #b45309; border: 1px dashed #fde047;"><strong>顧客備註：</strong><br>${order.remarks}</div>`; }
+    
+    document.getElementById('detailsModalBody').innerHTML = html;
+    const modal = document.getElementById('orderDetailsModal'); modal.style.display = 'flex'; setTimeout(() => { modal.classList.add('active'); }, 10);
+  }
+
+  function showProcessingStats() {
+    const processingOrders = allAdminOrders.filter(o => o.status === '處理中');
+    const itemMap = {};
+    processingOrders.forEach(order => {
+      const items = parseOrderDetails(order.details);
+      items.forEach(item => {
+        if (!itemMap[item.name]) itemMap[item.name] = { total: 0, orders: [] };
+        itemMap[item.name].total += item.qty;
+        itemMap[item.name].orders.push({ rowIndex: order.rowIndex, customerName: order.name, qty: item.qty, isChecked: order.progress[item.name] || false });
+      });
+    });
+
+    let html = '';
+    if (Object.keys(itemMap).length === 0) { html = '<p style="text-align:center; color:#999; padding: 20px 0;">目前沒有需要製作的品項</p>'; } 
+    else {
+      const sortedNames = Object.keys(itemMap).sort((a, b) => itemMap[b].total - itemMap[a].total);
+      sortedNames.forEach((name, idx) => {
+        const data = itemMap[name]; const completedCount = data.orders.filter(o => o.isChecked).reduce((sum, o) => sum + o.qty, 0); const accId = `acc-${idx}`;
+        html += `<div><div class="acc-header" onclick="toggleAccordion('${accId}')"><span>🍰 ${name} <span style="font-size:0.8rem; font-weight:normal; color:#666;">(完成: ${completedCount}/${data.total})</span></span><span style="color:#0369a1;">總計: ${data.total} ▼</span></div><div class="acc-body" id="${accId}">`;
+        data.orders.forEach(o => {
+          const checked = o.isChecked ? 'checked' : ''; const lblClass = o.isChecked ? 'checklist-label checked' : 'checklist-label';
+          html += `<label class="${lblClass}" id="statLbl-${o.rowIndex}-${name}"><input type="checkbox" ${checked} onchange="toggleItemProgress(${o.rowIndex}, '${name}', this.checked)">[${o.customerName}] - 需要 ${o.qty} 份</label>`;
+        });
+        html += `</div></div>`;
+      });
+    }
+    document.getElementById('statsModalBody').innerHTML = html;
+    const modal = document.getElementById('statsModal'); modal.style.display = 'flex'; setTimeout(() => { modal.classList.add('active'); }, 10);
+  }
+
+  function toggleAccordion(id) {
+    const el = document.getElementById(id); el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+  }
+
+  async function toggleItemProgress(rowIndex, itemName, isChecked) {
+    const order = allAdminOrders.find(o => o.rowIndex === rowIndex); if (!order) return;
+    order.progress[itemName] = isChecked;
+    const lblDetail = document.getElementById(`lbl-${rowIndex}-${itemName}`); if (lblDetail) { if (isChecked) lblDetail.classList.add('checked'); else lblDetail.classList.remove('checked'); }
+    const lblStat = document.getElementById(`statLbl-${rowIndex}-${itemName}`); if (lblStat) { if (isChecked) lblStat.classList.add('checked'); else lblStat.classList.remove('checked'); }
+    renderOrderTable(currentOrderTab);
+    
+    // 背景同步更新至伺服器
+    apiRequest('updateOrderProgress', { rowIndex: rowIndex, progressJSONStr: JSON.stringify(order.progress) }).catch(err => console.error(err));
+  }
+
+  async function changeOrderStatus(rowIndex, selectElement) {
+    const newStatus = selectElement.value; const originalColor = selectElement.style.color;
+    selectElement.style.color = '#ccc'; selectElement.disabled = true;
+    
+    try {
+      const res = await apiRequest('updateOrderStatus', { rowIndex: rowIndex, newStatus: newStatus });
+      if (res.success) { 
+        const order = allAdminOrders.find(o => o.rowIndex === rowIndex); 
+        if (order) order.status = newStatus; 
+        renderOrderTable(currentOrderTab); 
+      } 
+      else { selectElement.disabled = false; selectElement.style.color = originalColor; showMsg('更新失敗', res.message); }
+    } catch(err) {
+      selectElement.disabled = false; selectElement.style.color = originalColor; showMsg('連線失敗', err.message);
+    }
+  }
+
+  // ================= 🌟 訂單結算邏輯 =================
+  function renderFinanceTab() {
+    let totalRev = 0; let monthRev = 0; let monthCount = 0;
+    const now = new Date(); const currentMonth = now.getMonth(); const currentYear = now.getFullYear();
+
+    allAdminOrders.forEach(order => {
+      const orderDate = new Date(order.date); const amount = parseInt(order.total) || 0;
+      totalRev += amount;
+      if (orderDate.getFullYear() === currentYear && orderDate.getMonth() === currentMonth) { monthRev += amount; monthCount++; }
+    });
+
+    document.getElementById('totalRevenue').innerText = 'NT$ ' + totalRev.toLocaleString();
+    document.getElementById('monthlyRevenue').innerText = 'NT$ ' + monthRev.toLocaleString();
+    document.getElementById('monthlyOrderCount').innerText = monthCount + ' 筆';
+    
+    const firstDay = new Date(currentYear, currentMonth, 1); const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const fmt = (d) => { let m = '' + (d.getMonth() + 1), dy = '' + d.getDate(), yr = d.getFullYear(); if (m.length < 2) m = '0' + m; if (dy.length < 2) dy = '0' + dy; return [yr, m, dy].join('-'); };
+    document.getElementById('startDate').value = fmt(firstDay); document.getElementById('endDate').value = fmt(lastDay);
+    calcCustomRevenue();
+  }
+
+  function calcCustomRevenue() {
+    const startVal = document.getElementById('startDate').value; const endVal = document.getElementById('endDate').value;
+    if (!startVal || !endVal) return showMsg('提示', '請選擇完整的起始與結束日期。');
+    const start = new Date(startVal + 'T00:00:00'); const end = new Date(endVal + 'T23:59:59');
+    if (start > end) return showMsg('錯誤', '起始日期不能大於結束日期喔！');
+
+    let customRev = 0; let customCount = 0; const itemStats = {};
+    allAdminOrders.forEach(order => {
+      const orderDate = new Date(order.date);
+      if (orderDate >= start && orderDate <= end) {
+        customRev += parseInt(order.total) || 0; customCount++;
+        const items = parseOrderDetails(order.details);
+        items.forEach(item => { if (itemStats[item.name]) { itemStats[item.name] += item.qty; } else { itemStats[item.name] = item.qty; } });
+      }
+    });
+
+    document.getElementById('customRevenue').innerText = 'NT$ ' + customRev.toLocaleString();
+    document.getElementById('customOrderCount').innerText = `共 ${customCount} 筆`;
+
+    const sortedNames = Object.keys(itemStats).sort((a, b) => itemStats[b] - itemStats[a]);
+    currentFinanceItems = sortedNames.map(name => ({ name: name, qty: itemStats[name] }));
+    currentFinancePage = 1;
+    
+    renderFinanceItemTable();
+  }
+
+  function renderFinanceItemTable() {
+    const tbody = document.getElementById('financeItemStatsBody');
+    tbody.innerHTML = '';
+
+    if (currentFinanceItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999; padding:20px;">此區間無訂單紀錄</td></tr>';
+      document.getElementById('financePaginationContainer').innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(currentFinanceItems.length / financeItemsPerPage);
+    if (currentFinancePage > totalPages) currentFinancePage = totalPages || 1;
+
+    const startIndex = (currentFinancePage - 1) * financeItemsPerPage;
+    const endIndex = startIndex + financeItemsPerPage;
+    const paginatedItems = currentFinanceItems.slice(startIndex, endIndex);
+
+    paginatedItems.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><strong>${item.name}</strong></td><td style="text-align:center; color:#0369a1; font-weight:bold; font-size:1.1rem;">${item.qty}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    renderFinancePagination(totalPages);
+  }
+
+  function renderFinancePagination(totalPages) {
+    const container = document.getElementById('financePaginationContainer');
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const prevDisabled = currentFinancePage === 1 ? 'disabled' : '';
+    const nextDisabled = currentFinancePage === totalPages ? 'disabled' : '';
+
+    container.innerHTML = `
+      <button class="page-btn" ${prevDisabled} onclick="changeFinancePage(-1)">◀ 上一頁</button>
+      <span style="color: #666; font-weight: 500;">第 ${currentFinancePage} / ${totalPages} 頁</span>
+      <button class="page-btn" ${nextDisabled} onclick="changeFinancePage(1)">下一頁 ▶</button>
+    `;
+  }
+
+  function changeFinancePage(direction) {
+    currentFinancePage += direction;
+    renderFinanceItemTable();
+  }
+</script>
+
+</body>
+</html>
